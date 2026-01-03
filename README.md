@@ -28,8 +28,8 @@ export GH_TOKEN=$(gh auth token)
 
 - [print2paper4vscode](https://github.com/appliedmedia/print2paper4vscode) - VS Code extension for printing code
 - [gmail2trello](https://github.com/appliedmedia/gmail2trello) - Chrome extension for email to Trello
-- [p2p4vsc.com](https://github.com/appliedmedia/p2p4vsc.com) - Marketing site for Print2Paper4VSCode
-- [g2t.cc](https://github.com/appliedmedia/g2t.cc) - Marketing site for gmail2trello
+- [print2paper4vscode.com](https://github.com/appliedmedia/p2p4vsc.com) - Marketing site for Print2Paper4VSCode
+- [gmail2trello.com](https://github.com/appliedmedia/g2t.cc) - Marketing site for gmail2trello
 - [cov.llc](https://github.com/appliedmedia/cov.llc) - Fractional CTO consulting site
 
 ---

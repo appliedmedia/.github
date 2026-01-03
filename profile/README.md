@@ -6,14 +6,14 @@ Professional open source software and fractional CTO services.
 
 ## Software Projects
 
-### [Print2Paper4VSCode](https://p2p4vsc.com)
+### [Print2Paper4VSCode](https://print2paper4vscode.com)
 Print code with syntax highlighting. Trust the source.
 - 🎨 Syntax highlighting for 100+ languages
 - 📄 Professional PDF generation
 - 👁️ Live preview before printing
 - [Install](https://p2p4vsc.info) | [Source](https://github.com/appliedmedia/print2paper4vscode)
 
-### [gmail2trello](https://g2t.cc)
+### [gmail2trello](https://gmail2trello.com)
 Email to tasks in one click.
 - 📧 Convert Gmail threads to Trello cards instantly
 - 🔒 No data stored or transmitted to third parties
