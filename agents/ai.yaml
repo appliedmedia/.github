@@ -1,0 +1,126 @@
+# © Applied Media and ACoven. All rights reserved. Do not duplicate.
+
+01-pr-comment-process: |
+  # PR Comment Processing
+
+  # 0. GLOBAL RULES
+  - Use GH_TOKEN for all `gh` commands.
+  - Use the GitHub Action `reviewer-bot-comment-action-dispatch.yml` for all responses.
+  - Do not create branches.
+  - All changes land on the PR branch.
+  - You are only done when you have responded to EVERY comment.
+  - Query all required APIs.
+  - If a comment contains “🤖 Prompt for AI Agents”, follow it when making the fix.
+
+  # 1. FIND EVERY PR COMMENT
+  PR comments exist in three locations. Query all. Deduplicate by comment ID.
+
+  # 1.1 PR-LEVEL COMMENTS
+  gh api repos/{owner}/{repo}/issues/{pr_number}/comments \
+    --paginate \
+    --jq '.[] | {id, user: .user.login, body, updated_at}'
+
+  # 1.2 STANDALONE INLINE COMMENTS
+  gh api repos/{owner}/{repo}/pulls/{pr_number}/comments \
+    --paginate \
+    --jq '.[] | {id, user: .user.login, path, line, body, updated_at}'
+
+  # 1.3 REVIEW COMMENTS
+
+  # 1.3.1 Get review IDs
+  gh api repos/{owner}/{repo}/pulls/{pr_number}/reviews \
+    --paginate \
+    --jq '.[] | {id, user: .user.login, submitted_at}'
+
+  # 1.3.2 Get comments per review ID
+  gh api repos/{owner}/{repo}/pulls/{pr_number}/reviews/{review_id}/comments \
+    --paginate \
+    --jq '.[] | {id, path, position, body, updated_at}'
+
+  # 1.4 NORMALIZE
+  - Combine results 1.1, 1.2, 1.3
+  - Deduplicate by comment ID
+  - Process all comments
+  - Treat multiple suggestions separately
+
+  # 1.5 AI-AGENT PROMPT EXTRACTION
+  - For each comment body, look for a section titled: “🤖 Prompt for AI Agents”.
+  - If present, treat it as the primary implementation instructions for the fix.
+  - Preserve any explicit constraints in the prompt (paths, line ranges, keep/avoid changes, keep messages, exit codes, etc.).
+  - If the prompt conflicts with repo reality, explain and choose the closest safe interpretation in your response.
+
+  # 2. DECIDE ACTION
+  Choose one per suggestion:
+
+  A: Validate  
+  🤖 from Cursor: 👍🏻
+
+  B: Already fixed  
+  🤖 from Cursor: 😎 Already fixed! Commit {link}
+
+  C: Won’t do  
+  🤖 from Cursor: 🚫 Won’t do because {reason}
+
+  D: Fix applied  
+  🤖 from Cursor: ✅ Fixed it! Commit {link}
+
+  # 3. RESPOND
+  Post a response for every comment.
+
+  gh workflow run reviewer-bot-comment-action-dispatch.yml \
+    -f pr_number={PR} \
+    -f message="{response text}" \
+    -f reply_to_comment_id={comment_id}
+
+  Rules:
+  - One response per comment
+  - Use original comment ID
+  - Inline replies stay inline
+
+  # 4. INFORM USER
+  After posting all responses, provide:
+  - PR link
+  - Branch link
+  - Numbered results list
+
+  Example:
+  1) Control flow fallback → ✅ Fixed it! Commit {link}
+  2) Remove method → 🚫 Won’t fix; deprecated
+
+  # 5. CONFIRM
+  Post a single confirmation comment:
+
+  🤖 from Cursor to @coderabbitai:
+  Resolved items summary:
+  - Commit {link}: {what it addressed}
+  - Commit {link}: {what it addressed}
+  Comment responses:
+  - Comment #{id}: {A/B/C/D}
+  - Comment #{id}: {A/B/C/D}
+
+  Please confirm all issues are resolved or explained.
+
+  # 6. FOLLOW-UPS
+  - Every minute for up to 5 minutes check for CodeRabbit to respond. 
+  - Repeat for new comments.
+
+  # 7. USER REVIEW FORMAT
+  Raw text format:
+
+  1: Title 1 → Outcome ✅ / 🚫 (why)
+
+  1? »
+   
+  2: Title 2 → Outcome ✅ / 🚫 (why)
+
+  2? »
+
+  3: ...
+
+  # 8. REASSERTIONS
+  - Use GH_TOKEN for access
+  - You are NOT done until every comment has a response
+  - Use “🤖 Prompt for AI Agents” when present
+
+02-placeholder: |
+  # 02-placeholder
