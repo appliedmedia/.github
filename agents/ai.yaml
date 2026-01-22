@@ -6,7 +6,7 @@
 
   # 0. GLOBAL RULES
   - Use GH_TOKEN for all `gh` commands.
-  - Use the GitHub Action `reviewer-bot-comment-action-dispatch.yml` for all responses.
+  - Use the GitHub Action `reviewer-bot-comment-action-dispatch.yml` for ALL PR comments (replies and new top-level comments).
   - Do not create branches.
   - All changes land on the PR branch.
   - You are only done when you have responded to EVERY comment.
@@ -73,6 +73,8 @@
     -f message="{response text}" \
     -f reply_to_comment_id={comment_id}
 
+  Note: `reply_to_comment_id` is required when replying to a specific comment, but can be omitted to create a new top-level comment.
+
   Rules:
   - One response per comment
   - Use original comment ID
@@ -89,7 +91,13 @@
   2) Remove method → 🚫 Won’t fix; deprecated
 
   # 5. CONFIRM
-  Post a single confirmation comment:
+  Post a single confirmation comment using the workflow action:
+
+  gh workflow run reviewer-bot-comment-action-dispatch.yml \
+  -f pr_number={PR} \
+  -f message="{confirmation text}"
+
+  Note: Omit `reply_to_comment_id` to post as a new top-level comment.
 
   🤖 from Cursor to @coderabbitai:
   Resolved items summary:
