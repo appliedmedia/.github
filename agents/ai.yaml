@@ -49,7 +49,7 @@
   - These prompts provide primary implementation instructions for fixes.
   - Preserve any explicit constraints in the prompt (paths, line ranges, keep/avoid changes, keep messages, exit codes, etc.).
   - If the prompt conflicts with repo reality, explain and choose the closest safe interpretation in your response.
-  - Example format (CodeRabbit): A section titled 🤖 Prompt for AI Agents containing detailed instructions.
+  - Example format (CodeRabbit): A section titled "🤖 Prompt for AI Agents" containing detailed instructions.
 
   # 2. DECIDE ACTION
   Choose one per suggestion:
@@ -132,7 +132,7 @@
   # 8. REASSERTIONS
   - Use GH_TOKEN for access
   - You are NOT done until every comment has a response
-  - Follow structured AI agent prompts when present (e.g., CodeRabbit's 🤖 Prompt for AI Agents)
+  - Follow structured AI agent prompts when present (e.g., CodeRabbit's "🤖 Prompt for AI Agents")
 
 02-placeholder: |
   # 02-placeholder
