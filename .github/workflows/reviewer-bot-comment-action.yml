@@ -42,8 +42,7 @@ jobs:
           SANITIZED_FROM=$(printf '%s' "$FROM_PARAM" | tr -d '\n\r' | sed 's/[`$\\]//g')
           
           # Build the full message with attribution
-          FULL_MESSAGE="From ${SANITIZED_FROM}:
-${MESSAGE}"
+          FULL_MESSAGE="From ${SANITIZED_FROM}: ${MESSAGE}"
           if [ -z "$REPLY_TO_ID" ]; then
             gh pr comment "$PR_NUMBER" --body "$FULL_MESSAGE" --repo "$REPO"
           else

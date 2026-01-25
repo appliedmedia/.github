@@ -11,7 +11,7 @@
   - All changes land on the PR branch.
   - You are only done when you have responded to EVERY comment.
   - Query all required APIs.
-  - If a comment contains “🤖 Prompt for AI Agents”, follow it when making the fix.
+  - If a comment contains structured AI agent prompts, follow them when making the fix.
 
   # 1. FIND EVERY PR COMMENT
   PR comments exist in three locations. Query all. Deduplicate by comment ID.
@@ -45,10 +45,11 @@
   - Treat multiple suggestions separately
 
   # 1.5 AI-AGENT PROMPT EXTRACTION
-  - For each comment body, look for a section titled: “🤖 Prompt for AI Agents”.
-  - If present, treat it as the primary implementation instructions for the fix.
+  - Comments may contain structured prompts intended specifically for AI agents.
+  - These prompts provide primary implementation instructions for fixes.
   - Preserve any explicit constraints in the prompt (paths, line ranges, keep/avoid changes, keep messages, exit codes, etc.).
   - If the prompt conflicts with repo reality, explain and choose the closest safe interpretation in your response.
+  - Example format (CodeRabbit): A section titled “🤖 Prompt for AI Agents” containing detailed instructions.
 
   # 2. DECIDE ACTION
   Choose one per suggestion:
@@ -131,7 +132,7 @@
   # 8. REASSERTIONS
   - Use GH_TOKEN for access
   - You are NOT done until every comment has a response
-  - Use “🤖 Prompt for AI Agents” when present
+  - Follow structured AI agent prompts when present (e.g., CodeRabbit's “🤖 Prompt for AI Agents”)
 
 02-placeholder: |
   # 02-placeholder
