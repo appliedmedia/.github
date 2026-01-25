@@ -71,6 +71,7 @@
   gh workflow run reviewer-bot-comment-action-dispatch.yml \
     -f pr_number={PR} \
     -f message="{response text}" \
+    -f from="🤖 @cursorbot" \
     -f reply_to_comment_id={comment_id}
 
   Note: `reply_to_comment_id` is required when replying to a specific comment, but can be omitted to create a new top-level comment.
@@ -95,7 +96,8 @@
 
   gh workflow run reviewer-bot-comment-action-dispatch.yml \
   -f pr_number={PR} \
-  -f message="{confirmation text}"
+  -f message="{confirmation text}" \
+  -f from="🤖 @cursorbot"
 
   Note: Omit `reply_to_comment_id` to post as a new top-level comment.
 
