@@ -55,6 +55,7 @@ name: Copy Repo to Repo
 jobs:
   copy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout source repo (caller)
         uses: actions/checkout@v4
@@ -90,12 +91,19 @@ jobs:
             TO=$(echo "$copy" | jq -r '.to')
             COMMENT=$(echo "$copy" | jq -r '.comment // empty')
             
+            # Reject missing or null paths
+            if [ -z "$FROM" ] || [ "$FROM" = "null" ] || [ -z "$TO" ] || [ "$TO" = "null" ]; then
+              echo "❌ Invalid mapping: 'from' and 'to' must be non-empty strings"
+              exit 1
+            fi
+            
             # Validate paths (prevent traversal attacks)
+            # Block: absolute paths, explicit ./ or ../ prefixes, /../ sequences, and bare . or ..
             case "$FROM" in
-              /*|./*|../*|*/../*|*"/."*|..|.) echo "❌ Invalid from path: $FROM"; exit 1 ;;
+              /*|./*|../*|*/../*|*/..|\.\.|.) echo "❌ Invalid from path: $FROM"; exit 1 ;;
             esac
             case "$TO" in
-              /*|./*|../*|*/../*|*"/."*|..|.) echo "❌ Invalid to path: $TO"; exit 1 ;;
+              /*|./*|../*|*/../*|*/..|\.\.|.) echo "❌ Invalid to path: $TO"; exit 1 ;;
             esac
             
             SOURCE_PATH="source/$FROM"
@@ -160,7 +168,7 @@ jobs:
           SOURCE_REPO: ${{ github.repository }}
           TARGET_REPO: ${{ inputs.target_repo }}
         run: |
-          BRANCH="sync/$(echo "$PR_TITLE" | tr '[:upper:] ' '[:lower:]-' | tr -cd '[:alnum:]-')-$(date +%Y%m%d-%H%M%S)"
+          BRANCH="sync/$(echo "$PR_TITLE" | tr '[:upper:] ' '[:lower:]-' | tr -cd '[:alnum:]-')-$(date +%Y%m%d-%H%M%S)-$RANDOM"
           
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -174,25 +182,24 @@ jobs:
           fi
           echo "✅ Branch pushed: $BRANCH"
           
-          # Build PR body using heredoc
-          PR_BODY=$(cat <<EOF
-## Files Synced
-
-${COPY_LOG:-No file mapping log available}
-
-### Source
-[\`${SOURCE_REPO}\`](https://github.com/${SOURCE_REPO})
-
-${PR_BODY_EXTRA}
-
----
-_Automated sync via [action-copy-repo2repo](https://github.com/appliedmedia/.github)_
-EOF
-          )
+          # Build PR body (temp file avoids heredoc indentation issues in YAML)
+          {
+            echo "## Files Synced"
+            echo ""
+            echo "${COPY_LOG:-No file mapping log available}"
+            echo ""
+            echo "### Source"
+            echo "[\`${SOURCE_REPO}\`](https://github.com/${SOURCE_REPO})"
+            echo ""
+            echo "${PR_BODY_EXTRA}"
+            echo ""
+            echo "---"
+            echo "_Automated sync via [action-copy-repo2repo](https://github.com/appliedmedia/.github)_"
+          } > /tmp/pr-body.md
           
           if gh pr create \
             --title "$PR_TITLE" \
-            --body "$PR_BODY" \
+            --body-file /tmp/pr-body.md \
             --base "${{ inputs.base_branch }}" \
             --head "$BRANCH"; then
             echo "✅ PR created in $TARGET_REPO"
