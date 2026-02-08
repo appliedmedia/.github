@@ -6,7 +6,7 @@
 
   # 0. GLOBAL RULES
   - Use GH_TOKEN for all `gh` commands.
-  - Use the GitHub Action `reviewer-bot-comment-action-dispatch.yml` for ALL PR comments (replies and new top-level comments).
+  - Use the GitHub Action `action-proxy-reviewer-bot-comment.yml` for ALL PR comments (replies and new top-level comments).
   - Do not create branches.
   - All changes land on the PR branch.
   - You are only done when you have responded to EVERY comment.
@@ -54,17 +54,18 @@
   # 2. DECIDE ACTION
   Choose one per suggestion:
 
-  A: Validate  
-  🤖 from Cursor: 👍🏻
+  Validate (👍🏻):
+  🤖 from @cursorbot to @user: 👍🏻
 
-  B: Already fixed  
-  🤖 from Cursor: 😎 Already fixed! Commit {link}
+  Already fixed (😎): 
+  🤖 from @cursorbot to @user: 😎 Already fixed! Commit {link}
 
-  C: Won’t do  
-  🤖 from Cursor: 🚫 Won’t do because {reason}
+  Won’t do (🚫):
+  🤖 from @cursorbot to @user: 🚫 Won’t do because {reason}
+  NOTE: {reason} must be SIGNIFICANT. "It's a big change/It'll touch a lot/etc." are UNACCEPTABLE. Don't be lazy.
 
-  D: Fix applied  
-  🤖 from Cursor: ✅ Fixed it! Commit {link}
+  Fix applied (✅):
+  🤖 from @cursorbot to @user: ✅ Fixed it! Commit {link}
 
   # 3. RESPOND
   Post a response for every comment.
@@ -102,13 +103,16 @@
 
   Note: Omit `reply_to_comment_id` to post as a new top-level comment.
 
-  🤖 from Cursor to @coderabbitai:
-  Resolved items summary:
+  🤖 from @cursorbot to @coderabbitai:
+  Resolved:
   - Commit {link}: {what it addressed}
   - Commit {link}: {what it addressed}
-  Comment responses:
-  - Comment #{id}: {A/B/C/D}
-  - Comment #{id}: {A/B/C/D}
+  - Commit {link}:...
+  
+  Responses:
+  - Comment #{id}: {Validate (👍🏻)/Already fixed (😎)/Won’t do (🚫)/Fix applied (✅)}
+  - Comment #{id}: {Validate (👍🏻)/Already fixed (😎)/Won’t do (🚫)/Fix applied (✅)}
+  - Comment #{id}:...
 
   Please confirm all issues are resolved or explained.
 
@@ -119,11 +123,11 @@
   # 7. USER REVIEW FORMAT
   Raw text format:
 
-  1: Title 1 → Outcome ✅ / 🚫 (why)
+  1: Title 1: {Validate (👍🏻)/Already fixed (😎)/Won’t do (🚫)/Fix applied (✅)} {why, esoecially for 🚫}
 
   1? »
    
-  2: Title 2 → Outcome ✅ / 🚫 (why)
+  1: Title 2: {Validate (👍🏻)/Already fixed (😎)/Won’t do (🚫)/Fix applied (✅)} {why, esoecially for 🚫}
 
   2? »
 
