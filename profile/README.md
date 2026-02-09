@@ -1,4 +1,4 @@
-![Applied Media logo](assets/logo-appliedmedia-bright-bg.svg)
+![Applied Media logo](/assets/logo-appliedmedia-bright-bg.svg)
 # Applied Media
 
 Professional open source software and fractional CTO services.
