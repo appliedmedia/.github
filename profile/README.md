@@ -42,5 +42,5 @@ All our software projects are:
 - ✅ Made, stored, and served from the USA 🇺🇸
 
 <div align="center">
-  <img src="assets/footer-readme-appliedmedia-text.svg" alt="Applied Media footer" width="900" />
+  <img src="../assets/footer-readme-appliedmedia-text.svg" alt="Applied Media footer" width="900" />
 </div>
