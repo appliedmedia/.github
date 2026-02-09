@@ -7,6 +7,7 @@
       font-size: 8px;
       fill: white;
       opacity: 0.65;
+      white-space: pre-line;
     }
     line {
       stroke: white;
@@ -17,11 +18,5 @@
 
   <line x1="0" y1="0" x2="1200" y2="0" />
 
-  <text x="24" y="22" text-anchor="start" dominant-baseline="middle">
-    &#127482;&#127480; Made in the USA by Applied Media. Copyright &#169; 2025...2026-02-09.001:a@cov.in and Applied Media.
-  </text>
-
-  <text x="24" y="44" text-anchor="start" dominant-baseline="middle">
-    The Applied Media Shield, Triangle-Square AM, and Applied Media are registered trademarks and service marks of Applied Media. All Rights Reserved.
-  </text>
+  <text x="600" y="22" text-anchor="middle" dominant-baseline="middle">&#127482;&#127480; Made in the USA by Applied Media. Copyright &#169; 2025...2026-02-09.001:a@cov.in and Applied Media. The Applied Media Shield,.&#10;Triangle-Square AM, and Applied Media are registered trademarks and service marks of Applied Media. All Rights Reserved.</text>
 </svg>
