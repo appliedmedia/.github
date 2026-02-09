@@ -28,8 +28,11 @@ Email to tasks in one click.
 ### [Fractional CTO Services](https://cov.llc)
 Strategic technology guidance for startups and growing companies.
 - Cloud architecture
-- Team building
+- Team building, hiring, growth, career paths
 - Software delivery
+- Increasing internal productivity with AI
+- Adding AI product features
+- Converting to a Product-Led organization
 
 ## Trust & Transparency
 
