@@ -41,6 +41,6 @@ All our software projects are:
 - ✅ Encourages community participation and involvement
 - ✅ Made, stored, and served from the USA 🇺🇸
 
----
+<img src="/assets/footer-readme-appliedmedia-text.svg" alt="Applied Media footer" width="900" />
 
 <small style="font-size: 8px;">🇺🇸 Made in the USA by Applied Media. Copyright © 2025...2026-02-09.001:a@cov.in and Applied Media. The Applied Media Shield, Triangle-Square AM, and Applied Media and registered trademarks and servicemarks of Applied Media. All Rights Reserved.</small>
