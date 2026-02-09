@@ -1,6 +1,5 @@
+![Applied Media logo](assets/logo-appliedmedia-bright-bg.svg)
 # Applied Media
-
-🇺🇸 Made in the USA
 
 Professional open source software and fractional CTO services.
 
@@ -36,4 +35,4 @@ All our software projects are:
 
 ---
 
-Copyright © 2025...2026-02-09.001:a@cov.in and Applied Media. The Applied Media Shield, Triangle-Square AM, and Applied Media and registered trademarks and servicemarks of Applied Media. All Rights Reserved.
+<small>🇺🇸 Made in the USA by Applied Media. Copyright © 2025...2026-02-09.001:a@cov.in and Applied Media. The Applied Media Shield, Triangle-Square AM, and Applied Media and registered trademarks and servicemarks of Applied Media. All Rights Reserved.</small>
