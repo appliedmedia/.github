@@ -1,4 +1,10 @@
-# Applied Media - Organization Infrastructure
+<img
+  src="/assets/logo-appliedmedia-bright-bg.svg"
+  alt="Applied Media logo"
+  width="300"
+/>
+  
+## Applied Media - Organization Infrastructure
 
 This repository contains organization-wide public resources for Applied Media projects.
 
