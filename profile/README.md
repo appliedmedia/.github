@@ -10,7 +10,7 @@ Professional open source software and fractional CTO services.
 
 ## Software Projects
 
-### [Print2Paper4VSCode](https://print2paper4vscode.com)
+### [print2paper4vscode](https://print2paper4vscode.com)
 Print code with syntax highlighting. Trust the source.
 - 🎨 Syntax highlighting for 100+ languages
 - 📄 Professional PDF generation
