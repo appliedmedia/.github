@@ -1,10 +1,8 @@
-<p align="center">
-  <img
-    src="/assets/logo-appliedmedia-bright-bg.svg"
-    alt="Applied Media logo"
-    width="120"
-  />
-</p>
+<img
+  src="/assets/logo-appliedmedia-bright-bg.svg"
+  alt="Applied Media Bright Rounded logo"
+  width="300"
+/>
 
 ## Applied Media
 
