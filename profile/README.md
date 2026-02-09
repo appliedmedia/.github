@@ -36,8 +36,6 @@ Strategic technology guidance for startups and growing companies.
 All our software projects are:
 - ✅ Fully open source and auditable
 - ✅ Community driven
-- ✅ Made in the USA
-
----
+- ✅ Made, stored, and served from the USA 🇺🇸
 
 <small style="font-size: 8px;">🇺🇸 Made in the USA by Applied Media. Copyright © 2025...2026-02-09.001:a@cov.in and Applied Media. The Applied Media Shield, Triangle-Square AM, and Applied Media and registered trademarks and servicemarks of Applied Media. All Rights Reserved.</small>
