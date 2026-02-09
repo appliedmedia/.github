@@ -9,9 +9,8 @@
       opacity: 0.65;
     }
     line {
-      stroke: white;
+      stroke: #888;
       stroke-width: 1;
-      opacity: 0.65;
     }
   </style>
 
