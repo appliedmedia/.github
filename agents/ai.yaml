@@ -1,153 +1,149 @@
 # https://cov.pub/ai → https://github.com/appliedmedia/.github/agents/ai.yaml
 # Copyright © 2025...2026-03-17.001:a@cov.in and Applied Media. All rights reserved. Do not duplicate.
 
-01-pr-comment-process: |
-  # PR Comment Processing
+01-pr-comment-process:
 
-  # 0. GLOBAL RULES
-  - Use GH_TOKEN for all `gh` commands.
-  - Use the GitHub Action `action-proxy-reviewer-bot-comment.yml` for ALL PR comments (replies and new top-level comments).
-  - Do not create branches.
-  - All changes land on the PR branch.
-  - You are only done when you have responded to EVERY comment.
-  - Query all required APIs.
-  - If a comment contains structured AI agent prompts, follow them when making the fix.
+  1of9-global-rules:
+    - Use GH_TOKEN for all `gh` commands.
+    - Use the GitHub Action `action-proxy-reviewer-bot-comment.yml` for ALL PR comments (replies and new top-level comments).
+    - Do not create branches.
+    - All changes land on the PR branch.
+    - You are only done when you have responded to EVERY comment.
+    - Query all required APIs.
+    - If a comment contains structured AI agent prompts, follow them when making the fix.
 
-  # 1. FIND EVERY PR COMMENT
-  PR comments exist in three locations. Query all. Deduplicate by comment ID.
+  2of9-find-every-pr-comment-query-all-three-locations:  # Deduplicate by comment ID.
 
-  # 1.1 PR-LEVEL COMMENTS
-  gh api repos/{owner}/{repo}/issues/{pr_number}/comments \
-    --paginate \
-    --jq '.[] | {id, user: .user.login, body, updated_at}'
+    2.1of9-pr-level-comments:
+      exec: |
+        ```bash
+        gh api repos/{owner}/{repo}/issues/{pr_number}/comments \
+          --paginate \
+          --jq '.[] | {id, user: .user.login, body, updated_at}'
+        ```
 
-  # 1.2 STANDALONE INLINE COMMENTS
-  gh api repos/{owner}/{repo}/pulls/{pr_number}/comments \
-    --paginate \
-    --jq '.[] | {id, user: .user.login, path, line, body, updated_at}'
+    2.2of9-standalone-inline-comments:
+      exec: |
+        ```bash
+        gh api repos/{owner}/{repo}/pulls/{pr_number}/comments \
+          --paginate \
+          --jq '.[] | {id, user: .user.login, path, line, body, updated_at}'
+        ```
 
-  # 1.3 REVIEW COMMENTS
+    2.3of9-review-comments:
+      2.3.1of9-get-review-ids-and-bodies:
+        exec: |
+          ```bash
+          gh api repos/{owner}/{repo}/pulls/{pr_number}/reviews \
+            --paginate \
+            --jq '.[] | {id, user: .user.login, state: .state, body, submitted_at}'
+          ```
 
-  # 1.3.1 Get review IDs AND bodies
-  gh api repos/{owner}/{repo}/pulls/{pr_number}/reviews \
-    --paginate \
-    --jq '.[] | {id, user: .user.login, state: .state, body, submitted_at}'
+      2.3.2of9-get-comments-per-review-id:
+        exec: |
+          ```bash
+          gh api repos/{owner}/{repo}/pulls/{pr_number}/reviews/{review_id}/comments \
+            --paginate \
+            --jq '.[] | {id, path, position, body, updated_at}'
+          ```
 
-  # 1.3.2 Get comments per review ID
-  gh api repos/{owner}/{repo}/pulls/{pr_number}/reviews/{review_id}/comments \
-    --paginate \
-    --jq '.[] | {id, path, position, body, updated_at}'
+      2.3.3of9-parse-review-body-for-embedded-suggestions:  # Each embedded suggestion counts as a comment that requires a response.
+        outside-diff-range: >
+          Some review tools (e.g., CodeRabbit) embed "outside diff range" suggestions
+          directly in the review body rather than as child comments. These won't appear
+          in 2.3.2 results. If a review body is non-empty and contains
+          suggestions, file references, or proposed diffs, extract and treat each as a
+          separate actionable item tied to the review ID.
+        look-for:
+          - '"Outside diff range comments" sections'
+          - File-scoped <details>/<summary> blocks with line ranges and diffs
+          - Proposed fix blocks (```diff)
 
-  # 1.3.3 Parse review body for embedded suggestions
-  # Some review tools (e.g., CodeRabbit) embed "outside diff range" suggestions
-  # directly in the review body rather than as child comments. These won't appear
-  # in 1.3.2 results. If a review body is non-empty and contains suggestions,
-  # file references, or proposed diffs, extract and treat each as a separate
-  # actionable item tied to the review ID. Look for:
-  #   - "Outside diff range comments" sections
-  #   - File-scoped <details>/<summary> blocks with line ranges and diffs
-  #   - Proposed fix blocks (```diff)
-  # Each embedded suggestion counts as a comment that requires a response.
+    2.4of9-normalize:
+      - Combine results from 2.1, 2.2, 2.3
+      - Deduplicate by comment ID
+      - Process all comments
+      - Treat multiple suggestions separately
 
-  # 1.4 NORMALIZE
-  - Combine results 1.1, 1.2, 1.3
-  - Deduplicate by comment ID
-  - Process all comments
-  - Treat multiple suggestions separately
+    2.5of9-ai-agent-prompt-extraction:
+      - Comments may contain structured prompts intended specifically for AI agents.
+      - These prompts provide primary implementation instructions for fixes.
+      - Preserve any explicit constraints in the prompt (paths, line ranges, keep/avoid changes, keep messages, exit codes, etc.).
+      - If the prompt conflicts with repo reality, explain and choose the closest safe interpretation in your response.
+      - "Example format (CodeRabbit): A section titled \"🤖 Prompt for AI Agents\" containing detailed instructions."
 
-  # 1.5 AI-AGENT PROMPT EXTRACTION
-  - Comments may contain structured prompts intended specifically for AI agents.
-  - These prompts provide primary implementation instructions for fixes.
-  - Preserve any explicit constraints in the prompt (paths, line ranges, keep/avoid changes, keep messages, exit codes, etc.).
-  - If the prompt conflicts with repo reality, explain and choose the closest safe interpretation in your response.
-  - Example format (CodeRabbit): A section titled "🤖 Prompt for AI Agents" containing detailed instructions.
+  3of9-decide-action-choose-one:
+    validate: "🤖 from @cursorbot to @user: 👍🏻"
+    already-fixed: "🤖 from @cursorbot to @user: 😎 Already fixed! Commit {link}"
+    wont-do: "🤖 from @cursorbot to @user: 🚫 Won't do because {reason}"  # {reason} must be SIGNIFICANT. "It's a big change/It'll touch a lot/etc." are UNACCEPTABLE. Don't be lazy.
+    fix-applied: "🤖 from @cursorbot to @user: ✅ Fixed it! Commit {link}"
 
-  # 2. DECIDE ACTION
-  Choose one per suggestion:
+  4of9-respond-posting-a-response-for-every-comment:
+    exec: |
+      ```bash
+      gh workflow run reviewer-bot-comment-action-dispatch.yml \
+        -f pr_number={PR} \
+        -f message="{response text}" \
+        -f from="🤖 @cursorbot" \
+        -f reply_to_comment_id={comment_id}
+      ```
+    reply-to-id: "`reply_to_comment_id` is required when replying to a specific comment, but can be omitted to create a new top-level comment."
+    rules:
+      - One response per comment
+      - Use original comment ID
+      - Inline replies stay inline
 
-  Validate (👍🏻):
-  🤖 from @cursorbot to @user: 👍🏻
+  5of9-inform-user-after-posting:
+    include:
+      - PR link
+      - Branch link
+      - Numbered results list
+    example: |
+      1) Control flow fallback → ✅ Fixed it! Commit {link}
+      2) Remove method → 🚫 Won't fix; deprecated
 
-  Already fixed (😎): 
-  🤖 from @cursorbot to @user: 😎 Already fixed! Commit {link}
+  6of9-confirm-single-top-level:  # Omit `reply_to_comment_id` to post as a new top-level comment.
+    exec: |
+      ```bash
+      gh workflow run reviewer-bot-comment-action-dispatch.yml \
+        -f pr_number={PR} \
+        -f message="{confirmation text}" \
+        -f from="🤖 @cursorbot"
+      ```
+    content: |
+      🤖 from @cursorbot to @coderabbitai:
+      Resolved:
+      - Commit {link}: {what it addressed}
+      - Commit {link}: {what it addressed}
+      - Commit {link}:...
 
-  Won’t do (🚫):
-  🤖 from @cursorbot to @user: 🚫 Won’t do because {reason}
-  NOTE: {reason} must be SIGNIFICANT. "It's a big change/It'll touch a lot/etc." are UNACCEPTABLE. Don't be lazy.
+      Responses:
+      - Comment #{id}: {Validate (👍🏻)/Already fixed (😎)/Won't do (🚫)/Fix applied (✅)}
+      - Comment #{id}: {Validate (👍🏻)/Already fixed (😎)/Won't do (🚫)/Fix applied (✅)}
+      - Comment #{id}:...
 
-  Fix applied (✅):
-  🤖 from @cursorbot to @user: ✅ Fixed it! Commit {link}
+      Please confirm all issues are resolved or explained.
 
-  # 3. RESPOND
-  Post a response for every comment.
+  7of9-follow-ups:
+    - Every minute for up to 5 minutes check for CodeRabbit to respond.
+    - Repeat for new comments.
 
-  gh workflow run reviewer-bot-comment-action-dispatch.yml \
-    -f pr_number={PR} \
-    -f message="{response text}" \
-    -f from="🤖 @cursorbot" \
-    -f reply_to_comment_id={comment_id}
+  8of9-user-review-format:
+    content: |
+      1: Title 1: {Validate (👍🏻)/Already fixed (😎)/Won't do (🚫)/Fix applied (✅)} {why, especially for 🚫}
 
-  Note: `reply_to_comment_id` is required when replying to a specific comment, but can be omitted to create a new top-level comment.
+      1? »
 
-  Rules:
-  - One response per comment
-  - Use original comment ID
-  - Inline replies stay inline
+      1: Title 2: {Validate (👍🏻)/Already fixed (😎)/Won't do (🚫)/Fix applied (✅)} {why, especially for 🚫}
 
-  # 4. INFORM USER
-  After posting all responses, provide:
-  - PR link
-  - Branch link
-  - Numbered results list
+      2? »
 
-  Example:
-  1) Control flow fallback → ✅ Fixed it! Commit {link}
-  2) Remove method → 🚫 Won’t fix; deprecated
+      3: ...
 
-  # 5. CONFIRM
-  Post a single confirmation comment using the workflow action:
-
-  gh workflow run reviewer-bot-comment-action-dispatch.yml \
-  -f pr_number={PR} \
-  -f message="{confirmation text}" \
-  -f from="🤖 @cursorbot"
-
-  Note: Omit `reply_to_comment_id` to post as a new top-level comment.
-
-  🤖 from @cursorbot to @coderabbitai:
-  Resolved:
-  - Commit {link}: {what it addressed}
-  - Commit {link}: {what it addressed}
-  - Commit {link}:...
-  
-  Responses:
-  - Comment #{id}: {Validate (👍🏻)/Already fixed (😎)/Won’t do (🚫)/Fix applied (✅)}
-  - Comment #{id}: {Validate (👍🏻)/Already fixed (😎)/Won’t do (🚫)/Fix applied (✅)}
-  - Comment #{id}:...
-
-  Please confirm all issues are resolved or explained.
-
-  # 6. FOLLOW-UPS
-  - Every minute for up to 5 minutes check for CodeRabbit to respond. 
-  - Repeat for new comments.
-
-  # 7. USER REVIEW FORMAT
-  Raw text format:
-
-  1: Title 1: {Validate (👍🏻)/Already fixed (😎)/Won’t do (🚫)/Fix applied (✅)} {why, especially for 🚫}
-
-  1? »
-   
-  1: Title 2: {Validate (👍🏻)/Already fixed (😎)/Won’t do (🚫)/Fix applied (✅)} {why, especially for 🚫}
-
-  2? »
-
-  3: ...
-
-  # 8. REASSERTIONS
-  - Use GH_TOKEN for access
-  - You are NOT done until every comment has a response
-  - Follow structured AI agent prompts when present (e.g., CodeRabbit's "🤖 Prompt for AI Agents")
+  9of9-reassertions:
+    - Use GH_TOKEN for access
+    - You are NOT done until every comment has a response
+    - "Follow structured AI agent prompts when present (e.g., CodeRabbit's \"🤖 Prompt for AI Agents\")"
 
 02-placeholder: |
   # 02-placeholder
