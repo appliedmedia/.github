@@ -1,5 +1,5 @@
 # https://cov.pub/ai → https://github.com/appliedmedia/.github/agents/ai.yaml
-# Copyright © 2025...2026-02-10.001:a@cov.in and Applied Media. All rights reserved. Do not duplicate.
+# Copyright © 2025...2026-03-17.001:a@cov.in and Applied Media. All rights reserved. Do not duplicate.
 
 01-pr-comment-process: |
   # PR Comment Processing
@@ -134,11 +134,11 @@
   # 7. USER REVIEW FORMAT
   Raw text format:
 
-  1: Title 1: {Validate (👍🏻)/Already fixed (😎)/Won’t do (🚫)/Fix applied (✅)} {why, esoecially for 🚫}
+  1: Title 1: {Validate (👍🏻)/Already fixed (😎)/Won’t do (🚫)/Fix applied (✅)} {why, especially for 🚫}
 
   1? »
    
-  1: Title 2: {Validate (👍🏻)/Already fixed (😎)/Won’t do (🚫)/Fix applied (✅)} {why, esoecially for 🚫}
+  1: Title 2: {Validate (👍🏻)/Already fixed (😎)/Won’t do (🚫)/Fix applied (✅)} {why, especially for 🚫}
 
   2? »
 
