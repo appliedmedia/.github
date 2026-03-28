@@ -73,10 +73,10 @@
       - "Example format (CodeRabbit): A section titled \"🤖 Prompt for AI Agents\" containing detailed instructions."
 
   3of9-decide-action-choose-one:
-    validate: "🤖 from @cursorbot to @user: 👍🏻"
-    already-fixed: "🤖 from @cursorbot to @user: 😎 Already fixed! Commit {link}"
-    wont-do: "🤖 from @cursorbot to @user: 🚫 Won't do because {reason}"  # {reason} must be SIGNIFICANT. "It's a big change/It'll touch a lot/etc." are UNACCEPTABLE. Don't be lazy.
-    fix-applied: "🤖 from @cursorbot to @user: ✅ Fixed it! Commit {link}"
+    validate: "from 🤖 to @user: 👍🏻"
+    already-fixed: "from 🤖 to @user: 😎 Already fixed! Commit {link}"
+    wont-do: "from 🤖 to @user: 🚫 Won't do because {reason}"  # {reason} must be SIGNIFICANT. "It's a big change/It'll touch a lot/etc." are UNACCEPTABLE. Don't be lazy.
+    fix-applied: "from 🤖 to @user: ✅ Fixed it! Commit {link}"
 
   4of9-respond-posting-a-response-for-every-comment:
     exec: |
@@ -84,7 +84,7 @@
       gh workflow run reviewer-bot-comment-action-dispatch.yml \
         -f pr_number={PR} \
         -f message="{response text}" \
-        -f from="🤖 @cursorbot" \
+        -f from="🤖" \
         -f reply_to_comment_id={comment_id}
       ```
     reply-to-id: "`reply_to_comment_id` is required when replying to a specific comment, but can be omitted to create a new top-level comment."
@@ -108,10 +108,10 @@
       gh workflow run reviewer-bot-comment-action-dispatch.yml \
         -f pr_number={PR} \
         -f message="{confirmation text}" \
-        -f from="🤖 @cursorbot"
+        -f from="🤖"
       ```
     content: |
-      🤖 from @cursorbot to @coderabbitai:
+      from 🤖 to @coderabbitai:
       Resolved:
       - Commit {link}: {what it addressed}
       - Commit {link}: {what it addressed}
