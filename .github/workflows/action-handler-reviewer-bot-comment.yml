@@ -1,0 +1,91 @@
+# Reviewer Bot Comment Handler
+#
+# Central handler workflow for posting PR comments.
+# Called by proxy workflows in individual repos.
+#
+# Deployed to: appliedmedia/.github/.github/workflows/action-handler-reviewer-bot-comment.yml
+
+name: Reviewer Bot Comment (Handler)
+
+"on":
+  workflow_call:
+    inputs:
+      pr_number:
+        description: 'PR Number'
+        required: true
+        type: string
+      message:
+        description: 'Comment Body'
+        required: true
+        type: string
+      from:
+        description: 'Comment author attribution (e.g., 🤖 @cursorbot)'
+        required: true
+        type: string
+      reply_to_comment_id:
+        description: 'Comment ID to reply to (Optional)'
+        required: false
+        type: string
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  post-comment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Post Comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          MESSAGE: ${{ inputs.message }}
+          FROM_PARAM: ${{ inputs.from }}
+          REPLY_TO_ID: ${{ inputs.reply_to_comment_id }}
+          REPO: ${{ github.repository }}
+        run: |
+          # Sanitize the from parameter (remove potentially dangerous characters)
+          # Note: This is cosmetic/formatting protection for the attribution prefix only.
+          # MESSAGE is passed through as-is since both are env vars and double-quoted.
+          SANITIZED_FROM=$(printf '%s' "$FROM_PARAM" | tr -d '\n\r' | sed 's/[`$\\]//g')
+          
+          # Build the full message with attribution
+          FULL_MESSAGE="From ${SANITIZED_FROM}: ${MESSAGE}"
+          if [ -z "$REPLY_TO_ID" ]; then
+            gh pr comment "$PR_NUMBER" --body "$FULL_MESSAGE" --repo "$REPO"
+          else
+            # Try review comment reply (404/422 = wrong comment type, fall through)
+            if gh api --method POST "/repos/$REPO/pulls/$PR_NUMBER/comments" \
+              -f body="$FULL_MESSAGE" -F in_reply_to="$REPLY_TO_ID" 2>/tmp/api-err.log; then
+              exit 0
+            fi
+            echo "ℹ️ Review reply failed (expected for non-review comments), trying positioned comment..."
+            
+            # Try fetching parent for positioning
+            if PARENT=$(gh api "/repos/$REPO/pulls/comments/$REPLY_TO_ID" 2>/tmp/api-err.log); then
+              COMMIT_ID=$(echo "$PARENT" | jq -r '.commit_id')
+              FILE_PATH=$(echo "$PARENT" | jq -r '.path')
+              LINE=$(echo "$PARENT" | jq -r '.line // empty')
+              SIDE=$(echo "$PARENT" | jq -r '.side // "RIGHT"')
+              if [ -n "$LINE" ] && [ "$LINE" != "null" ]; then
+                if gh api --method POST "/repos/$REPO/pulls/$PR_NUMBER/comments" \
+                  -f body="$FULL_MESSAGE" -f commit_id="$COMMIT_ID" -f path="$FILE_PATH" \
+                  -F line="$LINE" -f side="$SIDE" 2>/tmp/api-err.log; then
+                  exit 0
+                fi
+                echo "ℹ️ Positioned comment failed, trying issue comment fallback..."
+              fi
+            fi
+            
+            # Fallback to quoted issue comment
+            if ORIG=$(gh api "/repos/$REPO/issues/comments/$REPLY_TO_ID" --jq '.body' 2>/tmp/api-err.log); then
+              QUOTED=$(printf '%s' "$ORIG" | sed 's/^/> /')
+              gh pr comment "$PR_NUMBER" --body "${QUOTED}"$'\n\n'"${FULL_MESSAGE}" --repo "$REPO"
+              exit 0
+            fi
+            
+            echo "ERROR: Comment ID $REPLY_TO_ID not found"
+            [ -f /tmp/api-err.log ] && cat /tmp/api-err.log
+            exit 1
+          fi

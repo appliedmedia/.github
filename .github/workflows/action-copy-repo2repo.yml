@@ -1,0 +1,209 @@
+# Copy Repo to Repo - Reusable Workflow
+#
+# Generic workflow for copying files from the calling repo to a target repo.
+# Creates a PR in the target repo with the changes.
+#
+# Deployed to: appliedmedia/.github/.github/workflows/action-copy-repo2repo.yml
+#
+# Usage:
+#   jobs:
+#     sync:
+#       uses: appliedmedia/.github/.github/workflows/action-copy-repo2repo.yml@main
+#       with:
+#         target_repo: appliedmedia/some-repo
+#         copies: |
+#           [
+#             {"from": "templates/foo.yml", "to": ".github/workflows/foo.yml", "comment": "Workflow"},
+#             {"from": "templates/bar.css", "to": "css/bar.css", "comment": "Styles"}
+#           ]
+#         pr_title: "Sync templates"
+#       secrets:
+#         cross_repo_token: ${{ secrets.APPLIEDMEDIA_CROSS_REPO_TOKEN }}
+
+name: Copy Repo to Repo
+
+"on":
+  workflow_call:
+    inputs:
+      target_repo:
+        description: 'Target repository (org/repo format, e.g., appliedmedia/print2paper4vscode)'
+        required: true
+        type: string
+      copies:
+        description: 'JSON array of files to copy: [{"from": "source/path", "to": "dest/path", "comment": "description"}, ...]'
+        required: true
+        type: string
+      pr_title:
+        description: 'Title for the PR created in target repo'
+        required: true
+        type: string
+      pr_body_extra:
+        description: 'Additional text to append to PR body (optional)'
+        required: false
+        type: string
+        default: ''
+      base_branch:
+        description: 'Base branch in target repo (default: main)'
+        required: false
+        type: string
+        default: 'main'
+    secrets:
+      cross_repo_token:
+        description: 'GitHub token with repo access to target repository'
+        required: true
+
+jobs:
+  copy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout source repo (caller)
+        uses: actions/checkout@v4
+        with:
+          path: source
+          fetch-depth: 1
+
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.target_repo }}
+          token: ${{ secrets.cross_repo_token }}
+          ref: ${{ inputs.base_branch }}
+          path: target
+          fetch-depth: 1
+
+      - name: Copy files according to mappings
+        id: copy
+        env:
+          COPIES: ${{ inputs.copies }}
+        run: |
+          echo "Processing file mappings..."
+          
+          # Validate JSON before processing
+          if ! echo "$COPIES" | jq -e '.' > /dev/null 2>&1; then
+            echo "❌ Error: Invalid JSON in copies input"
+            exit 1
+          fi
+          
+          # Parse copies (use process substitution to avoid subshell)
+          while read -r copy; do
+            FROM=$(echo "$copy" | jq -r '.from')
+            TO=$(echo "$copy" | jq -r '.to')
+            COMMENT=$(echo "$copy" | jq -r '.comment // empty')
+            
+            # Reject missing or null paths
+            if [ -z "$FROM" ] || [ "$FROM" = "null" ] || [ -z "$TO" ] || [ "$TO" = "null" ]; then
+              echo "❌ Invalid mapping: 'from' and 'to' must be non-empty strings"
+              exit 1
+            fi
+            
+            # Validate paths (prevent traversal attacks)
+            # Block: absolute paths, explicit ./ or ../ prefixes, /../ sequences, and bare . or ..
+            case "$FROM" in
+              /*|./*|../*|*/../*|*/..|\.\.|.) echo "❌ Invalid from path: $FROM"; exit 1 ;;
+            esac
+            case "$TO" in
+              /*|./*|../*|*/../*|*/..|\.\.|.) echo "❌ Invalid to path: $TO"; exit 1 ;;
+            esac
+            
+            SOURCE_PATH="source/$FROM"
+            DEST_PATH="target/$TO"
+            
+            if [ ! -e "$SOURCE_PATH" ]; then
+              echo "❌ Missing source: $SOURCE_PATH"
+              exit 1
+            fi
+            
+            # Create destination directory
+            mkdir -p "$(dirname "$DEST_PATH")"
+            
+            # Copy file or directory
+            if [ -d "$SOURCE_PATH" ]; then
+              cp -r "$SOURCE_PATH/." "$DEST_PATH/"
+              echo "✅ Copied directory: $FROM → $TO"
+            else
+              cp "$SOURCE_PATH" "$DEST_PATH"
+              echo "✅ Copied file: $FROM → $TO"
+            fi
+            
+            # Log for PR body
+            if [ -n "$COMMENT" ]; then
+              echo "- \`$FROM\` → \`$TO\` ($COMMENT)" >> /tmp/copy-repo2repo.log
+            else
+              echo "- \`$FROM\` → \`$TO\`" >> /tmp/copy-repo2repo.log
+            fi
+          done < <(echo "$COPIES" | jq -c '.[]')
+          
+          # Output copy log if it exists
+          if [ -f /tmp/copy-repo2repo.log ]; then
+            DATETIME=$(date +%Y-%m-%d_%H%M%S)
+            EOF_DELIM="{{${DATETIME}_copy-repo2repo:eof}}"
+            echo "copy_log<<$EOF_DELIM" >> $GITHUB_OUTPUT
+            cat /tmp/copy-repo2repo.log >> $GITHUB_OUTPUT
+            echo "$EOF_DELIM" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check for changes
+        id: changes
+        working-directory: target
+        run: |
+          git add -A
+          if git diff --staged --quiet; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ No changes to sync"
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "✅ Changes detected"
+            git diff --staged --stat
+          fi
+
+      - name: Create PR
+        if: steps.changes.outputs.has_changes == 'true'
+        working-directory: target
+        env:
+          GH_TOKEN: ${{ secrets.cross_repo_token }}
+          PR_TITLE: ${{ inputs.pr_title }}
+          PR_BODY_EXTRA: ${{ inputs.pr_body_extra }}
+          COPY_LOG: ${{ steps.copy.outputs.copy_log }}
+          SOURCE_REPO: ${{ github.repository }}
+          TARGET_REPO: ${{ inputs.target_repo }}
+        run: |
+          BRANCH="sync/$(echo "$PR_TITLE" | tr '[:upper:] ' '[:lower:]-' | tr -cd '[:alnum:]-')-$(date +%Y%m%d-%H%M%S)-$RANDOM"
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git checkout -b "$BRANCH"
+          git commit -m "$PR_TITLE"
+          
+          if ! git push origin "$BRANCH"; then
+            echo "❌ git push failed"
+            exit 1
+          fi
+          echo "✅ Branch pushed: $BRANCH"
+          
+          # Build PR body (temp file avoids heredoc indentation issues in YAML)
+          {
+            echo "## Files Synced"
+            echo ""
+            echo "${COPY_LOG:-No file mapping log available}"
+            echo ""
+            echo "### Source"
+            echo "[\`${SOURCE_REPO}\`](https://github.com/${SOURCE_REPO})"
+            echo ""
+            echo "${PR_BODY_EXTRA}"
+            echo ""
+            echo "---"
+            echo "_Automated sync via [action-copy-repo2repo](https://github.com/appliedmedia/.github)_"
+          } > /tmp/pr-body.md
+          
+          if gh pr create \
+            --title "$PR_TITLE" \
+            --body-file /tmp/pr-body.md \
+            --base "${{ inputs.base_branch }}" \
+            --head "$BRANCH"; then
+            echo "✅ PR created in $TARGET_REPO"
+          else
+            echo "❌ PR creation failed"
+            exit 1
+          fi
