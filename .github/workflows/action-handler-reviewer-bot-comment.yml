@@ -1,11 +1,11 @@
-# Reviewer Bot Comment Handler
+# Handler Reviewer Bot Comment
 #
 # Central handler workflow for posting PR comments.
 # Called by proxy workflows in individual repos.
 #
 # Deployed to: appliedmedia/.github/.github/workflows/action-handler-reviewer-bot-comment.yml
 
-name: Reviewer Bot Comment (Handler)
+name: Handler Reviewer Bot Comment
 
 "on":
   workflow_call:
@@ -47,31 +47,46 @@ jobs:
         run: |
           # Sanitize the from parameter (remove potentially dangerous characters)
           # Note: This is cosmetic/formatting protection for the attribution prefix only.
-          # MESSAGE is passed through as-is since both are env vars and double-quoted.
+          # MESSAGE is trusted input from caller workflows, not end users.
           SANITIZED_FROM=$(printf '%s' "$FROM_PARAM" | tr -d '\n\r' | sed 's/[`$\\]//g')
           
           # Build the full message with attribution
           FULL_MESSAGE="From ${SANITIZED_FROM}: ${MESSAGE}"
           if [ -z "$REPLY_TO_ID" ]; then
-            gh pr comment "$PR_NUMBER" --body "$FULL_MESSAGE" --repo "$REPO"
+            # Direct comment (no reply target)
+            if ! gh pr comment "$PR_NUMBER" --body "$FULL_MESSAGE" --repo "$REPO" 2>/tmp/api-err.log; then
+              echo "ERROR: Failed to post comment to PR $PR_NUMBER"
+              [ -s /tmp/api-err.log ] && cat /tmp/api-err.log
+              exit 1
+            fi
           else
+            # Validate REPLY_TO_ID is numeric (prevent injection in API paths)
+            if ! [[ "$REPLY_TO_ID" =~ ^[1-9][0-9]*$ ]]; then
+              echo "ERROR: REPLY_TO_ID must be numeric, got: $REPLY_TO_ID"
+              exit 1
+            fi
+            
+            # Clear error log at start
+            : > /tmp/api-err.log
+            
             # Try review comment reply (404/422 = wrong comment type, fall through)
             if gh api --method POST "/repos/$REPO/pulls/$PR_NUMBER/comments" \
-              -f body="$FULL_MESSAGE" -F in_reply_to="$REPLY_TO_ID" 2>/tmp/api-err.log; then
+              -f body="$FULL_MESSAGE" -F in_reply_to="$REPLY_TO_ID" 2>>/tmp/api-err.log; then
               exit 0
             fi
             echo "ℹ️ Review reply failed (expected for non-review comments), trying positioned comment..."
             
             # Try fetching parent for positioning
-            if PARENT=$(gh api "/repos/$REPO/pulls/comments/$REPLY_TO_ID" 2>/tmp/api-err.log); then
-              COMMIT_ID=$(echo "$PARENT" | jq -r '.commit_id')
-              FILE_PATH=$(echo "$PARENT" | jq -r '.path')
-              LINE=$(echo "$PARENT" | jq -r '.line // empty')
-              SIDE=$(echo "$PARENT" | jq -r '.side // "RIGHT"')
-              if [ -n "$LINE" ] && [ "$LINE" != "null" ]; then
+            if PARENT=$(gh api "/repos/$REPO/pulls/comments/$REPLY_TO_ID" 2>>/tmp/api-err.log); then
+              COMMIT_ID=$(printf '%s\n' "$PARENT" | jq -r '.commit_id // empty')
+              FILE_PATH=$(printf '%s\n' "$PARENT" | jq -r '.path // empty')
+              LINE=$(printf '%s\n' "$PARENT" | jq -r '.line // .original_line // empty')
+              SIDE=$(printf '%s\n' "$PARENT" | jq -r '.side // "RIGHT"')
+              # All required fields must be present for positioned comment
+              if [ -n "$COMMIT_ID" ] && [ -n "$FILE_PATH" ] && [ -n "$LINE" ]; then
                 if gh api --method POST "/repos/$REPO/pulls/$PR_NUMBER/comments" \
                   -f body="$FULL_MESSAGE" -f commit_id="$COMMIT_ID" -f path="$FILE_PATH" \
-                  -F line="$LINE" -f side="$SIDE" 2>/tmp/api-err.log; then
+                  -F line="$LINE" -f side="$SIDE" 2>>/tmp/api-err.log; then
                   exit 0
                 fi
                 echo "ℹ️ Positioned comment failed, trying issue comment fallback..."
@@ -79,13 +94,15 @@ jobs:
             fi
             
             # Fallback to quoted issue comment
-            if ORIG=$(gh api "/repos/$REPO/issues/comments/$REPLY_TO_ID" --jq '.body' 2>/tmp/api-err.log); then
+            if ORIG=$(gh api "/repos/$REPO/issues/comments/$REPLY_TO_ID" --jq '.body' 2>>/tmp/api-err.log); then
               QUOTED=$(printf '%s' "$ORIG" | sed 's/^/> /')
-              gh pr comment "$PR_NUMBER" --body "${QUOTED}"$'\n\n'"${FULL_MESSAGE}" --repo "$REPO"
-              exit 0
+              if gh pr comment "$PR_NUMBER" --body "${QUOTED}"$'\n\n'"${FULL_MESSAGE}" --repo "$REPO" 2>>/tmp/api-err.log; then
+                exit 0
+              fi
+              echo "ℹ️ Quoted reply failed..."
             fi
             
-            echo "ERROR: Comment ID $REPLY_TO_ID not found"
-            [ -f /tmp/api-err.log ] && cat /tmp/api-err.log
+            echo "ERROR: All comment reply methods failed for ID $REPLY_TO_ID"
+            [ -s /tmp/api-err.log ] && cat /tmp/api-err.log
             exit 1
           fi
