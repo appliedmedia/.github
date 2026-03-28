@@ -3,7 +3,7 @@
 # Central handler workflow for posting PR comments.
 # Called by proxy workflows in individual repos.
 #
-# Deployed to: appliedmedia/.github/.github/workflows/action-handler-reviewer-bot-comment.yml
+# Deployed to: appliedmedia/internal/.github/workflows/action-handler-reviewer-bot-comment.yml
 
 name: Handler Reviewer Bot Comment
 
