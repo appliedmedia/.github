@@ -3,7 +3,7 @@
   alt="Applied Media logo"
   width="300"
 />
-  
+
 ## Applied Media - Organization Infrastructure
 
 This repository contains organization-wide public resources for Applied Media projects.
