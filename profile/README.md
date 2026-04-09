@@ -10,6 +10,19 @@ Professional open source software and fractional CTO services.
 
 ## Software Projects
 
+### [Claiyr](https://claiyr.com)
+Beyond what you think.
+- 💡 Capture thoughts before they disappear
+- 🔗 Discover connections across everything you've captured
+- 🚀 Compound your thinking into something you can use
+- [Source](https://github.com/appliedmedia/claiyr)
+
+### [gsheet2json](https://gsheet2json.com)
+Turn Google Sheets into JSON APIs.
+- 📊 Publish any Google Sheet as a JSON endpoint
+- ⚡ No server, no backend, no setup
+- [Source](https://github.com/appliedmedia/gsheet2json)
+
 ### [print2paper4vscode](https://print2paper4vscode.com)
 Print code with syntax highlighting. Trust the source.
 - 🎨 Syntax highlighting for 100+ languages
