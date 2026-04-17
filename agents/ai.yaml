@@ -5,12 +5,14 @@
 
   1of9-global-rules:
     - Use GH_TOKEN for all `gh` commands.
-    - Use the GitHub Action `action-proxy-reviewer-bot-comment.yml` for ALL PR comments (replies and new top-level comments).
+    - Post all PR comments directly via `gh api` (inline-reply and top-level endpoints). The former proxy workflow (`action-proxy-reviewer-bot-comment.yml`) and its handler have been archived; the direct-API path works universally and does not depend on cross-repo reusable-workflow access.
+    - Include the `from 🤖 to @<user>: <emoji> ...` attribution prefix in the comment body itself (see 3of9); comments post from the acting user's account.
     - Do not create branches.
     - All changes land on the PR branch.
     - You are only done when you have responded to EVERY comment.
     - Query all required APIs.
     - If a comment contains structured AI agent prompts, follow them when making the fix.
+    - Never use `@coderabbitai review`, that triggers a full new review. Just @coderabbitai is enough to get it's notice for incremental checks.
 
   2of9-find-every-pr-comment-query-all-three-locations:  # Deduplicate by comment ID.
 
@@ -79,15 +81,19 @@
     fix-applied: "from 🤖 to @user: ✅ Fixed it! Commit {link}"
 
   4of9-respond-posting-a-response-for-every-comment:
-    exec: |
+    exec-inline-reply: |
       ```bash
-      gh workflow run reviewer-bot-comment-action-dispatch.yml \
-        -f pr_number={PR} \
-        -f message="{response text}" \
-        -f from="🤖" \
-        -f reply_to_comment_id={comment_id}
+      # Reply to an inline review comment (keeps the thread inline)
+      gh api repos/{owner}/{repo}/pulls/{pr_number}/comments/{comment_id}/replies \
+        -f body='from 🤖 to @{user}: {emoji} {response text}'
       ```
-    reply-to-id: "`reply_to_comment_id` is required when replying to a specific comment, but can be omitted to create a new top-level comment."
+    exec-top-level: |
+      ```bash
+      # New top-level PR comment (issue-comments endpoint; PRs are issues)
+      gh api repos/{owner}/{repo}/issues/{pr_number}/comments \
+        -f body='from 🤖 to @{user}: {emoji} {response text}'
+      ```
+    choose: "Use the inline-reply endpoint when the source comment has a file path / line (i.e. was posted on the pulls/comments endpoint). Use top-level for issue-level comments or fresh threads."
     rules:
       - One response per comment
       - Use original comment ID
@@ -102,13 +108,11 @@
       1) Control flow fallback → ✅ Fixed it! Commit {link}
       2) Remove method → 🚫 Won't fix; deprecated
 
-  6of9-confirm-single-top-level:  # Omit `reply_to_comment_id` to post as a new top-level comment.
+  6of9-confirm-single-top-level:  # Post a new top-level comment summarizing all responses.
     exec: |
       ```bash
-      gh workflow run reviewer-bot-comment-action-dispatch.yml \
-        -f pr_number={PR} \
-        -f message="{confirmation text}" \
-        -f from="🤖"
+      gh api repos/{owner}/{repo}/issues/{pr_number}/comments \
+        -f body='{confirmation text}'
       ```
     content: |
       from 🤖 to @coderabbitai:
