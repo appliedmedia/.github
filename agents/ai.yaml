@@ -1,42 +1,34 @@
 # https://cov.pub/ai → https://github.com/appliedmedia/.github/agents/ai.yaml
-# Copyright © 2025...2026-03-17.001:a@cov.in and Applied Media. All rights reserved. Do not duplicate.
+# Copyright © 2025...2026-04-26.001:a@cov.in and Applied Media. All rights reserved. Do not duplicate.
 
 01-pr-comment-process:
 
-  0of9-autonomy-after-push:
-    - After ANY `git push` on a PR branch, start an autonomous poll in the
-      FOREGROUND. Do NOT return control to the user with phrases like "ping
-      me when checks are done", "I'll wait", or "let me know when to check".
-      Polling is your job; the user should only be interrupted on completion,
-      failure, or a genuine decision point.
-    - Mechanism (foreground, single Bash call): run a shell loop that
-      `sleep 60 && gh pr checks <pr> --json ...` and `gh api .../reviews`,
-      iterating until a stop condition. Do NOT use background threads or
-      `run_in_background:true`. The poll blocks until it resolves.
-    - Stop conditions (any one):
-        a) all required CI checks SUCCESS and (if tagged) CodeRabbit review posted
-        b) any required CI check FAILURE
-        c) 10 minutes elapsed
-    - On stop, take the next action WITHOUT asking:
-        green  -> proceed to merge or rebase dependent branch as planned
-        red    -> fetch failing logs, diagnose, fix, re-push (restart poll)
-        timeout-> report status and ask the user
-
-  1of9-global-rules:
+  1of7-global-rules:
     - Use GH_TOKEN for all `gh` commands.
     - Post all PR comments directly via `gh api` (inline-reply and top-level endpoints). The former proxy workflow (`action-proxy-reviewer-bot-comment.yml`) and its handler have been archived; the direct-API path works universally and does not depend on cross-repo reusable-workflow access.
-    - Include the `from 🤖 to @<user>: <emoji> ...` attribution prefix in the comment body itself (see 3of9); comments post from the acting user's account.
+    - Include the `from 🤖: <emoji> ...` attribution prefix in the comment body itself (see 3of9); comments post from the acting user's account.
     - Do not create branches.
-    - Use `--commit` never `--squash` for merging unless explicitly requested.
     - All changes land on the PR branch.
-    - You are only done when you have responded to EVERY comment.
     - Query all required APIs.
     - If a comment contains structured AI agent prompts, follow them when making the fix.
     - Never use `@coderabbitai review`, that triggers a full new review. Just @coderabbitai is enough to get it's notice for incremental checks.
+    - Shortcuts if you need them:
+      exec-inline-reply: |
+        ```bash
+        # Reply to an inline review comment (keeps the thread inline)
+        gh api repos/{owner}/{repo}/pulls/{pr_number}/comments/{comment_id}/replies \
+          -f body='from 🤖: {emoji} {response text}'
+        ```
+      exec-top-level: |
+        ```bash
+        # New top-level PR comment (issue-comments endpoint; PRs are issues)
+        gh api repos/{owner}/{repo}/issues/{pr_number}/comments \
+          -f body='from 🤖: {emoji} {response text}'
+        ```
+  
+  2of7-find-every-pr-comment-query-all-three-locations:  # Deduplicate by comment ID.
 
-  2of9-find-every-pr-comment-query-all-three-locations:  # Deduplicate by comment ID.
-
-    2.1of9-pr-level-comments:
+    2.1of7-pr-level-comments:
       exec: |
         ```bash
         gh api repos/{owner}/{repo}/issues/{pr_number}/comments \
@@ -44,7 +36,7 @@
           --jq '.[] | {id, user: .user.login, body, updated_at}'
         ```
 
-    2.2of9-standalone-inline-comments:
+    2.2of7-standalone-inline-comments:
       exec: |
         ```bash
         gh api repos/{owner}/{repo}/pulls/{pr_number}/comments \
@@ -52,8 +44,8 @@
           --jq '.[] | {id, user: .user.login, path, line, body, updated_at}'
         ```
 
-    2.3of9-review-comments:
-      2.3.1of9-get-review-ids-and-bodies:
+    2.3of7-review-comments:
+      2.3.1of7-get-review-ids-and-bodies:
         exec: |
           ```bash
           gh api repos/{owner}/{repo}/pulls/{pr_number}/reviews \
@@ -61,7 +53,7 @@
             --jq '.[] | {id, user: .user.login, state: .state, body, submitted_at}'
           ```
 
-      2.3.2of9-get-comments-per-review-id:
+      2.3.2of7-get-comments-per-review-id:
         exec: |
           ```bash
           gh api repos/{owner}/{repo}/pulls/{pr_number}/reviews/{review_id}/comments \
@@ -69,7 +61,7 @@
             --jq '.[] | {id, path, position, body, updated_at}'
           ```
 
-      2.3.3of9-parse-review-body-for-embedded-suggestions:  # Each embedded suggestion counts as a comment that requires a response.
+      2.3.3of7-parse-review-body-for-embedded-suggestions:  # Each embedded suggestion counts as a comment that requires a response.
         outside-diff-range: >
           Some review tools (e.g., CodeRabbit) embed "outside diff range" suggestions
           directly in the review body rather than as child comments. These won't appear
@@ -81,54 +73,26 @@
           - File-scoped <details>/<summary> blocks with line ranges and diffs
           - Proposed fix blocks (```diff)
 
-    2.4of9-normalize:
+    2.4of7-normalize:
       - Combine results from 2.1, 2.2, 2.3
       - Deduplicate by comment ID
       - Process all comments
       - Treat multiple suggestions separately
 
-    2.5of9-ai-agent-prompt-extraction:
+    2.5of7-ai-agent-prompt-extraction:
       - Comments may contain structured prompts intended specifically for AI agents.
       - These prompts provide primary implementation instructions for fixes.
       - Preserve any explicit constraints in the prompt (paths, line ranges, keep/avoid changes, keep messages, exit codes, etc.).
       - If the prompt conflicts with repo reality, explain and choose the closest safe interpretation in your response.
       - "Example format (CodeRabbit): A section titled \"🤖 Prompt for AI Agents\" containing detailed instructions."
 
-  3of9-decide-action-choose-one:
-    validate: "from 🤖 to @user: 👍🏻"
-    already-fixed: "from 🤖 to @user: 😎 Already fixed! Commit {link}"
-    wont-do: "from 🤖 to @user: 🚫 Won't do because {reason}"  # {reason} must be SIGNIFICANT. "It's a big change/It'll touch a lot/etc." are UNACCEPTABLE. Don't be lazy.
-    fix-applied: "from 🤖 to @user: ✅ Fixed it! Commit {link}"
+  3of7-decide-action-choose-one:
+    validate: "from 🤖: 👍🏻"
+    already-fixed: "from 🤖: 😎 Already fixed! Commit {link}"
+    wont-do: "from 🤖: 🚫 Won't do because {reason}"  # {reason} must be SIGNIFICANT. "It's a big change/It'll touch a lot/etc." are UNACCEPTABLE. Don't be lazy.
+    fix-applied: "from 🤖: ✅ Fixed it! Commit {link}"
 
-  4of9-respond-posting-a-response-for-every-comment:
-    exec-inline-reply: |
-      ```bash
-      # Reply to an inline review comment (keeps the thread inline)
-      gh api repos/{owner}/{repo}/pulls/{pr_number}/comments/{comment_id}/replies \
-        -f body='from 🤖 to @{user}: {emoji} {response text}'
-      ```
-    exec-top-level: |
-      ```bash
-      # New top-level PR comment (issue-comments endpoint; PRs are issues)
-      gh api repos/{owner}/{repo}/issues/{pr_number}/comments \
-        -f body='from 🤖 to @{user}: {emoji} {response text}'
-      ```
-    choose: "Use the inline-reply endpoint when the source comment has a file path / line (i.e. was posted on the pulls/comments endpoint). Use top-level for issue-level comments or fresh threads."
-    rules:
-      - One response per comment
-      - Use original comment ID
-      - Inline replies stay inline
-
-  5of9-inform-user-after-posting:
-    include:
-      - PR link
-      - Branch link
-      - Numbered results list
-    example: |
-      1) Control flow fallback → ✅ Fixed it! Commit {link}
-      2) Remove method → 🚫 Won't fix; deprecated
-
-  6of9-confirm-single-top-level:  # Post a new top-level comment summarizing all responses.
+  4of7-confirm-single-top-level:  # Post a new top-level comment summarizing all responses.
     exec: |
       ```bash
       gh api repos/{owner}/{repo}/issues/{pr_number}/comments \
@@ -142,34 +106,29 @@
       - Commit {link}:...
 
       Responses:
-      - Comment #{id}: {Validate (👍🏻)/Already fixed (😎)/Won't do (🚫)/Fix applied (✅)}
-      - Comment #{id}: {Validate (👍🏻)/Already fixed (😎)/Won't do (🚫)/Fix applied (✅)}
+      - Comment #{id}: {Validate (👍🏻)/Already fixed (😎)/Won't do (🚫)/Fix applied (✅)} Commit {link}
+      - Comment #{id}: {Validate (👍🏻)/Already fixed (😎)/Won't do (🚫)/Fix applied (✅)} Commit {link}
       - Comment #{id}:...
 
       Please confirm all issues are resolved or explained.
 
-  7of9-follow-ups:
-    - Applies to CodeRabbit review cycles. Use the SAME foreground polling
-      mechanism as 0of9 (single Bash call, `sleep 60` loop, no background).
-    - After tagging `@coderabbitai`, poll `gh api .../reviews` and
-      `gh api .../pulls/{pr}/comments` every 60s for up to 5 minutes.
-    - Do NOT hand control back to the user to wait. The poll blocks.
-    - Stop when: new review/comment appears, or 5 minutes elapse.
-    - If new comments appear, repeat the full 2of9-through-6of9 cycle.
+  5of7-follow-ups:
+    - Every minute for up to 5 minutes check for CodeRabbit to respond.
+    - Repeat for new comments.
 
-  8of9-user-review-format:
-    content: |
-      1: Title 1: {Validate (👍🏻)/Already fixed (😎)/Won't do (🚫)/Fix applied (✅)} {why, especially for 🚫}
+  6of7-user-review-wontdos:
+    Give the user the list of items that were marked won't do and why: |
+      1: Won't do 1: {Won't do (🚫)} {2+ sentences of detail why}
 
       1? »
 
-      1: Title 2: {Validate (👍🏻)/Already fixed (😎)/Won't do (🚫)/Fix applied (✅)} {why, especially for 🚫}
+      2: Won't do 2: {Won't do (🚫)} {2+ sentences of detail why}
 
       2? »
 
       3: ...
 
-  9of9-reassertions:
+  7of7-reassertions:
     - Use GH_TOKEN for access
     - You are NOT done until every comment has a response
     - "Follow structured AI agent prompts when present (e.g., CodeRabbit's \"🤖 Prompt for AI Agents\")"
