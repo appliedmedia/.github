@@ -87,7 +87,7 @@
       - "Example format (CodeRabbit): A section titled \"🤖 Prompt for AI Agents\" containing detailed instructions."
 
   3of7-decide-action-choose-one:
-    validate: "from 🤖: 👍🏻"
+    validate: "from 🤖: 👍"
     already-fixed: "from 🤖: 😎 Already fixed! Commit {link}"
     wont-do: "from 🤖: 🚫 Won't do because {reason}"  # {reason} must be SIGNIFICANT. "It's a big change/It'll touch a lot/etc." are UNACCEPTABLE. Don't be lazy.
     fix-applied: "from 🤖: ✅ Fixed it! Commit {link}"
@@ -100,15 +100,9 @@
       ```
     content: |
       from 🤖 to @coderabbitai:
-      Resolved:
-      - Commit {link}: {what it addressed}
-      - Commit {link}: {what it addressed}
-      - Commit {link}:...
-
-      Responses:
-      - Comment #{id}: {Validate (👍🏻)/Already fixed (😎)/Won't do (🚫)/Fix applied (✅)} Commit {link}
-      - Comment #{id}: {Validate (👍🏻)/Already fixed (😎)/Won't do (🚫)/Fix applied (✅)} Commit {link}
-      - Comment #{id}:...
+      - Comment 1 {id} {descriptive title}: {validate👍|already-fixed😎)|wont-do🚫)|fix-applied✅} Commit {link}
+      - Comment 2 {id} {descriptive title}: {validate👍|already-fixed😎)|wont-do🚫)|fix-applied✅} Commit {link}
+      - Comment 3 {id}...
 
       Please confirm all issues are resolved or explained.
 
@@ -118,11 +112,11 @@
 
   6of7-user-review-wontdos:
     Give the user the list of items that were marked won't do and why: |
-      1: Won't do 1: {Won't do (🚫)} {2+ sentences of detail why}
+      1: Won't do 1: {wont-do🚫} {2+ sentences reason why}
 
       1? »
 
-      2: Won't do 2: {Won't do (🚫)} {2+ sentences of detail why}
+      2: Won't do 2: {wont-do🚫} {2+ sentences reason why}
 
       2? »
 
@@ -131,7 +125,7 @@
   7of7-reassertions:
     - Use GH_TOKEN for access
     - You are NOT done until every comment has a response
-    - "Follow structured AI agent prompts when present (e.g., CodeRabbit's \"🤖 Prompt for AI Agents\")"
+    - Follow structured AI agent prompts when present, e.g., '🤖 Prompt for AI Agents'
 
 02-placeholder: |
   # 02-placeholder
