@@ -5,7 +5,7 @@
 
   1of7-global-rules:
     - Use GH_TOKEN for all `gh` commands.
-    - Post all PR comments directly via `gh api` (inline-reply and top-level endpoints). The former proxy workflow (`action-proxy-reviewer-bot-comment.yml`) and its handler have been archived; the direct-API path works universally and does not depend on cross-repo reusable-workflow access.
+    - Post all PR comments directly via `gh api` (inline-reply and top-level endpoints).
     - Include the `from 🤖: <emoji> ...` attribution prefix in the comment body itself (see 3of9); comments post from the acting user's account.
     - Do not create branches.
     - All changes land on the PR branch.
