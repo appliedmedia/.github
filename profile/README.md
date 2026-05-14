@@ -67,7 +67,7 @@ We believe all projects should be open for introspection:
 
 * ✅ Fully open source and auditable when possible
 * ✅ Encourage and promote community participation and involvement
-* ✅ 🇺🇸 Made in the USA + Global friendly 🌍 by Applied Media <img src="/assets/logo-appliedmedia-bright-bg.svg" alt="Applied Media Bright Rounded logo" width="20" />
+* ✅ Made in the 🇺🇸 USA + Global 🌍 friendly by Applied Media <img src="/assets/logo-appliedmedia-bright-bg.svg" alt="Applied Media Bright Rounded logo" width="20" />
 
 <p align="center">
   <img src="/assets/footer-readme-appliedmedia-text.svg" alt="Applied Media footer" width="100%" />
