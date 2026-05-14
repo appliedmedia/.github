@@ -3,7 +3,7 @@
 # <!-- title line blank -->
 
 <img
-  src="/assets/logo-appliedmedia-bright-bg.svg"
+  src="assets/logo-appliedmedia-bright-bg.svg"
   alt="Applied Media Bright Rounded logo"
   width="300"
 />
